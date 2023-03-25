@@ -22,22 +22,19 @@ const io = socket(server, {
 const users = new Map();
 
 io.on("connection", (socket) => {
-  console.log("connected");
-
-  socket.on("join-room", (roomId) => {
-    console.log("new user joined room", roomId);
+  socket.on("join-room", (username, roomId, userId, photoUrl) => {
     socket.join(roomId);
-    users.set(socket.id, { userId: socket.id, roomId });
-    socket.broadcast
-      .to(roomId)
-      .emit("user-connected", JSON.stringify(users.get(socket.id)));
+    const user = { userId, username, photoUrl };
+    users.set(socket.id, user);
+    socket.broadcast.to(roomId).emit("new-user-joined", users.get(socket.id));
+    io.sockets.in(roomId).emit("users-in-room", [...users.values()]);
 
-    socket.on("disconnect-user", () => {
-      console.log("user disconnected");
-      socket.broadcast
-        .to(roomId)
-        .emit("user-disconnected", users.get(socket.id));
+    socket.on("disconnect", () => {
+      const disconnectedUserID = users.get(socket.id).userId;
+      socket.broadcast.to(roomId).emit("user-disconnected", disconnectedUserID);
+      users.delete(socket.id);
+      io.sockets.in(roomId).emit("users-in-room", [...users.values()]);
+      socket.leave(roomId);
     });
-    users.delete(socket.id);
   });
 });
