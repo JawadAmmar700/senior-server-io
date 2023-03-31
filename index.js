@@ -22,18 +22,54 @@ const io = socket(server, {
 const users = new Map();
 
 io.on("connection", (socket) => {
-  socket.on("join-room", (username, roomId, userId, photoUrl) => {
+  socket.on("join-room", (username, room_name, roomId, userId, photoUrl) => {
     socket.join(roomId);
     const user = { userId, username, photoUrl };
-    users.set(socket.id, user);
-    socket.broadcast.to(roomId).emit("new-user-joined", users.get(socket.id));
-    io.sockets.in(roomId).emit("users-in-room", [...users.values()]);
+    if (users.has(roomId)) {
+      const roomName = users.get(roomId)[0];
+      users.set(roomId, [roomName, users.get(roomId)[1].set(socket.id, user)]);
+    } else {
+      users.set(roomId, [room_name, new Map().set(socket.id, user)]);
+    }
+    socket.broadcast
+      .to(roomId)
+      .emit("new-user-joined", users.get(roomId)[1].get(socket.id));
+    io.sockets
+      .in(roomId)
+      .emit("users-in-room", [...users.get(roomId)[1].values()]);
+    io.sockets.in(roomId).emit("room-name", users.get(roomId)[0]);
+
+    socket.on("userMuted", (userId) => {
+      socket.broadcast
+        .to(roomId)
+        .emit("userMuted", users.get(roomId)[1].get(socket.id));
+    });
+    socket.on("userUnmuted", (userId) => {
+      socket.broadcast
+        .to(roomId)
+        .emit("userUnmuted", users.get(roomId)[1].get(socket.id));
+    });
+    socket.on("userCameraOn", (userId) => {
+      socket.broadcast
+        .to(roomId)
+        .emit("userCameraOn", users.get(roomId)[1].get(socket.id));
+    });
+    socket.on("userCameraOff", (userId) => {
+      socket.broadcast
+        .to(roomId)
+        .emit("userCameraOff", users.get(roomId)[1].get(socket.id));
+    });
 
     socket.on("disconnect", () => {
-      const disconnectedUserID = users.get(socket.id).userId;
+      const disconnectedUserID = users.get(roomId)[1].get(socket.id).userId;
       socket.broadcast.to(roomId).emit("user-disconnected", disconnectedUserID);
-      users.delete(socket.id);
-      io.sockets.in(roomId).emit("users-in-room", [...users.values()]);
+      users.get(roomId)[1].delete(socket.id);
+      io.sockets
+        .in(roomId)
+        .emit("users-in-room", [...users.get(roomId)[1].values()]);
+      if (users.get(roomId)[1].size === 0) {
+        users.delete(roomId);
+      }
       socket.leave(roomId);
     });
   });
