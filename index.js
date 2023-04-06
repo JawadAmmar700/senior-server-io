@@ -20,6 +20,10 @@ const io = socket(server, {
 });
 
 const users = new Map();
+const usersCameraONOFF = new Map();
+const usersMuted = new Map();
+const usersScreenShare = new Map();
+const roomNameMap = new Map();
 
 io.on("connection", (socket) => {
   socket.on("join-room", (username, room_name, roomId, userId, photoUrl) => {
@@ -29,6 +33,9 @@ io.on("connection", (socket) => {
       const roomName = users.get(roomId)[0];
       users.set(roomId, [roomName, users.get(roomId)[1].set(socket.id, user)]);
     } else {
+      if (!roomNameMap.has(roomId)) {
+        roomNameMap.set(roomId, room_name);
+      }
       users.set(roomId, [room_name, new Map().set(socket.id, user)]);
     }
     socket.broadcast
@@ -37,33 +44,61 @@ io.on("connection", (socket) => {
     io.sockets
       .in(roomId)
       .emit("users-in-room", [...users.get(roomId)[1].values()]);
-    io.sockets.in(roomId).emit("room-name", users.get(roomId)[0]);
+    io.sockets.in(roomId).emit("room-name", roomNameMap.get(roomId));
 
-    socket.on("userMuted", (userId) => {
-      socket.broadcast
-        .to(roomId)
-        .emit("userMuted", users.get(roomId)[1].get(socket.id));
+    socket.on("streams", () => {
+      io.sockets.in(roomId).emit("streams");
     });
-    socket.on("userUnmuted", (userId) => {
-      socket.broadcast
-        .to(roomId)
-        .emit("userUnmuted", users.get(roomId)[1].get(socket.id));
-    });
-    socket.on("userCameraOn", (userId) => {
-      socket.broadcast
-        .to(roomId)
-        .emit("userCameraOn", users.get(roomId)[1].get(socket.id));
-    });
-    socket.on("userCameraOff", (userId) => {
-      socket.broadcast
-        .to(roomId)
-        .emit("userCameraOff", users.get(roomId)[1].get(socket.id));
+
+    socket.on("user-operation", (userId, op) => {
+      switch (op) {
+        case "userCameraOff":
+          usersCameraONOFF.set(userId, userId);
+          socket.broadcast
+            .to(roomId)
+            .emit("user-operation", userId, op, [...usersCameraONOFF.values()]);
+          break;
+        case "userCameraOn":
+          usersCameraONOFF.delete(userId);
+          socket.broadcast
+            .to(roomId)
+            .emit("user-operation", userId, op, [...usersCameraONOFF.values()]);
+          break;
+        case "userMuted":
+          usersMuted.set(userId, userId);
+          socket.broadcast
+            .to(roomId)
+            .emit("user-operation", userId, op, [...usersMuted.values()]);
+          break;
+        case "userUnmuted":
+          usersMuted.delete(userId);
+          socket.broadcast
+            .to(roomId)
+            .emit("user-operation", userId, op, [...usersMuted.values()]);
+          break;
+        case "userScreenShareOff":
+          usersScreenShare.delete(userId);
+          socket.broadcast
+            .to(roomId)
+            .emit("user-operation", userId, op, [...usersScreenShare.values()]);
+          break;
+        case "userScreenShareOn":
+          usersScreenShare.set(userId, userId);
+          socket.broadcast
+            .to(roomId)
+            .emit("user-operation", userId, op, [...usersScreenShare.values()]);
+          break;
+        default:
+          break;
+      }
     });
 
     socket.on("disconnect", () => {
       const disconnectedUserID = users.get(roomId)[1].get(socket.id).userId;
       socket.broadcast.to(roomId).emit("user-disconnected", disconnectedUserID);
       users.get(roomId)[1].delete(socket.id);
+      usersCameraONOFF.delete(disconnectedUserID);
+      usersMuted.delete(disconnectedUserID);
       io.sockets
         .in(roomId)
         .emit("users-in-room", [...users.get(roomId)[1].values()]);
