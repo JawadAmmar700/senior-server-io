@@ -49,6 +49,14 @@ io.on("connection", (socket) => {
     socket.on("streams", () => {
       io.sockets.in(roomId).emit("streams");
     });
+    io.sockets.in(roomId).emit("get-users-muted", [...usersMuted.values()]);
+
+    io.sockets
+      .in(roomId)
+      .emit("get-users-cameraOnOff", [...usersCameraONOFF.values()]);
+    io.sockets
+      .in(roomId)
+      .emit("get-users-shareScreen", [...usersScreenShare.values()]);
 
     socket.on("user-operation", (userId, op) => {
       switch (op) {
@@ -99,6 +107,7 @@ io.on("connection", (socket) => {
       users.get(roomId)[1].delete(socket.id);
       usersCameraONOFF.delete(disconnectedUserID);
       usersMuted.delete(disconnectedUserID);
+      usersScreenShare.delete(disconnectedUserID);
       io.sockets
         .in(roomId)
         .emit("users-in-room", [...users.get(roomId)[1].values()]);
