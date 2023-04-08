@@ -101,6 +101,10 @@ io.on("connection", (socket) => {
       }
     });
 
+    socket.on("chat-message", (message) => {
+      socket.broadcast.to(roomId).emit("chat-message", message);
+    });
+
     socket.on("disconnect", () => {
       const disconnectedUserID = users.get(roomId)[1].get(socket.id).userId;
       socket.broadcast.to(roomId).emit("user-disconnected", disconnectedUserID);
