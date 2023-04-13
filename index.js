@@ -111,13 +111,6 @@ io.on("connection", (socket) => {
           roomNameMap.clear();
         }
         socket.leave(roomId);
-        console.log(
-          usersCameraONOFF,
-          usersMuted,
-          usersScreenShare,
-          roomNameMap,
-          users
-        );
       }
     });
   });
