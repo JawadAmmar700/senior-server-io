@@ -73,6 +73,7 @@ model Reminder {
   time Int
   isDone Boolean
   notificationSent Boolean
+  timeString String
   userId   String  @db.ObjectId
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
