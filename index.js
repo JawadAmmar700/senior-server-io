@@ -2,25 +2,12 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const cors = require("cors");
-const bodyParser = require("body-parser");
 const socket = require("socket.io");
-const { createCronJob, createCronJobToMarkAsDone } = require("./lib/cron-job");
 
-app.use(bodyParser.json());
 app.use(cors({ origin: process.env.CLIENT_APP, optionsSuccessStatus: 200 }));
 
 app.get("/", (req, res) => {
   res.send("Hey there!, this is a server that is used by the senior project");
-});
-
-app.post("/cron-job", async (req, res) => {
-  const { todo } = req.body;
-  await createCronJob(todo);
-  await createCronJobToMarkAsDone(todo);
-
-  res.json({
-    message: "The cron Job is created successfully",
-  });
 });
 
 const server = app.listen(process.env.PORT || 4000);
