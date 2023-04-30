@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "es2016",
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "watch": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true
+  }
+}
