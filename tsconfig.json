@@ -1,12 +1,18 @@
 {
   "compilerOptions": {
-    "target": "es2016",
     "module": "commonjs",
     "esModuleInterop": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "allowSyntheticDefaultImports": true,
+    "target": "es6",
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "outDir": "dist",
+    "baseUrl": ".",
     "watch": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true
-  }
+    "paths": {
+      "*": ["node_modules/*", "src/types/*"]
+    }
+  },
+  "include": ["./src/**/*"]
 }
