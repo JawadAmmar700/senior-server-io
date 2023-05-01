@@ -2,7 +2,7 @@
   "name": "video-chat-server",
   "version": "1.0.0",
   "description": "video chat signaling server",
-  "main": "index.js",
+  "main": "src/index.ts",
   "license": "MIT",
   "scripts": {
     "build": "tsc",
@@ -14,8 +14,7 @@
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "nodemon": "^2.0.21",
-    "socket.io": "^4.6.1",
-    "socket.io-stream": "^0.9.1"
+    "socket.io": "^4.6.1"
   },
   "devDependencies": {
     "@types/express": "^4.17.17",
