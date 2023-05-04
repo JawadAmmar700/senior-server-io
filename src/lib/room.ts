@@ -11,6 +11,8 @@ type User = {
   userId: string;
   username: string;
   photoUrl: string;
+  // isCamera: boolean;
+  // isMic: boolean;
 };
 
 class Rooms {
@@ -62,18 +64,16 @@ class Room extends Rooms {
     this.emitUsersInRoom();
     this.emitRoomName();
     this.emitStreams();
-    this.emitUsersMuted();
-    this.emitUsersCameraOnOff();
-    this.emitUsersScreenShare();
   }
 
   removeUser(socket: Socket) {
     const user = this.users.get(socket.id);
     if (user) {
       const disconnectedUserID = user.userId;
-      socket.broadcast
-        .to(this.id)
-        .emit("user-disconnected", disconnectedUserID);
+      socket.broadcast.to(this.id).emit("user-disconnected", {
+        username: user.username,
+        userId: disconnectedUserID,
+      });
       this.users.delete(socket.id);
       this.usersCameraOnOff.delete(disconnectedUserID);
       this.usersMuted.delete(disconnectedUserID);
@@ -94,75 +94,15 @@ class Room extends Rooms {
   }
 
   emitStreams() {
-    this.io.sockets.in(this.id).emit("streams");
+    this.io.sockets.in(this.id).emit("media-streams");
   }
 
-  emitUsersMuted() {
-    this.io.sockets
-      .in(this.id)
-      .emit("get-users-muted", [...this.usersMuted.values()]);
+  emitUserOperation(socket: Socket, userId: string, op: string) {
+    socket.broadcast.to(this.id).emit("user-operation", op, userId);
   }
 
-  emitUsersCameraOnOff() {
-    this.io.sockets
-      .in(this.id)
-      .emit("get-users-cameraOnOff", [...this.usersCameraOnOff.values()]);
-  }
-
-  emitUsersScreenShare() {
-    this.io.sockets
-      .in(this.id)
-      .emit("get-users-shareScreen", [...this.usersScreenShare.values()]);
-  }
-
-  emitUserOperation(
-    socket: Socket,
-    userId: string,
-    op: string,
-    data: Array<string>
-  ) {
-    socket.broadcast.to(this.id).emit("user-operation", userId, op, data);
-  }
-
-  emitChatMessage(socket: Socket, message: string) {
+  emitChatMessage(socket: Socket, message: any) {
     socket.broadcast.to(this.id).emit("chat-message", message);
-  }
-
-  handleUserOperation(
-    socket: Socket,
-    userId: string,
-    isTrue: boolean,
-    op: string
-  ) {
-    switch (op) {
-      case "userCameraOnOff":
-        isTrue
-          ? this.usersCameraOnOff.delete(userId)
-          : this.usersCameraOnOff.set(userId, userId);
-        this.emitUserOperation(socket, userId, op, [
-          ...this.usersCameraOnOff.values(),
-        ]);
-        break;
-      case "userMuted":
-        isTrue
-          ? this.usersMuted.set(userId, userId)
-          : this.usersMuted.delete(userId);
-        this.emitUserOperation(socket, userId, op, [
-          ...this.usersMuted.values(),
-        ]);
-        break;
-      case "userScreenShare":
-        isTrue
-          ? this.usersScreenShare.set(userId, userId)
-          : this.usersScreenShare.delete(userId);
-        this.emitUserOperation(socket, userId, op, [
-          ...this.usersScreenShare.values(),
-        ]);
-        break;
-
-      default:
-        break;
-    }
   }
 }
 

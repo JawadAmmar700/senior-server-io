@@ -29,8 +29,8 @@ io.on("connection", (socket) => {
   socket.on("join-room", (username, room_name, roomId, userId, photoUrl) => {
     const room = rooms.createRoom(room_name, roomId);
     room.addUser(socket, { userId, username, photoUrl });
-    socket.on("user-operation", (userId, isTrue, op) =>
-      room.handleUserOperation(socket, userId, isTrue, op)
+    socket.on("user-operation", (userId, op) =>
+      room.emitUserOperation(socket, userId, op)
     );
     socket.on("streams", () => room.emitStreams());
     socket.on("chat-message", (message) => {
