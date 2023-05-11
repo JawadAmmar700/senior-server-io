@@ -27,13 +27,34 @@ class Room extends Rooms {
         this.usersCameraOnOff = new Map();
         this.usersMuted = new Map();
         this.usersScreenShare = new Map();
+        this.roomParticipants = new Map();
         this.name = room_name;
         this.id = id;
     }
+    dateToString() {
+        return new Date().toLocaleTimeString([], {
+            hour: "numeric",
+            minute: "numeric",
+        });
+    }
+    addParticipant(user) {
+        this.roomParticipants.set(user.userId, Object.assign(Object.assign({}, user), { time: this.dateToString(), left: false, timeLeft: null }));
+    }
+    updateParticipant(userId) {
+        const participant = this.roomParticipants.get(userId);
+        if (participant) {
+            participant.left = true;
+            participant.timeLeft = this.dateToString();
+            this.roomParticipants.set(userId, participant);
+        }
+    }
     addUser(socket, user) {
-        this.users.set(socket.id, user);
+        this.users.set(socket.id, Object.assign(Object.assign({}, user), { time: this.dateToString() }));
+        this.addParticipant(user);
         socket.join(this.id);
-        socket.broadcast.to(this.id).emit("new-user-joined", user);
+        socket.broadcast
+            .to(this.id)
+            .emit("new-user-joined", Object.assign(Object.assign({}, user), { time: this.dateToString() }));
         this.emitUsersInRoom();
         this.emitRoomName();
         this.emitStreams();
@@ -42,6 +63,7 @@ class Room extends Rooms {
         const user = this.users.get(socket.id);
         if (user) {
             const disconnectedUserID = user.userId;
+            this.updateParticipant(disconnectedUserID);
             socket.broadcast.to(this.id).emit("user-disconnected", {
                 username: user.username,
                 userId: disconnectedUserID,
@@ -64,6 +86,9 @@ class Room extends Rooms {
     }
     emitStreams() {
         this.io.sockets.in(this.id).emit("media-streams");
+        this.io.sockets
+            .in(this.id)
+            .emit("participants", [...this.roomParticipants.values()]);
     }
     emitUserOperation(socket, userId, op) {
         socket.broadcast.to(this.id).emit("user-operation", op, userId);

@@ -11,8 +11,17 @@ type User = {
   userId: string;
   username: string;
   photoUrl: string;
-  // isCamera: boolean;
-  // isMic: boolean;
+  email: string;
+  time: string;
+};
+type Participant = {
+  userId: string;
+  username: string;
+  photoUrl: string;
+  time: string;
+  left?: boolean;
+  timeLeft?: string | null;
+  email: string;
 };
 
 class Rooms {
@@ -46,6 +55,7 @@ class Room extends Rooms {
   usersCameraOnOff = new Map<string, string>();
   usersMuted = new Map<string, string>();
   usersScreenShare = new Map<string, string>();
+  roomParticipants = new Map<string, Participant>();
 
   constructor(
     room_name: string,
@@ -57,10 +67,38 @@ class Room extends Rooms {
     this.id = id;
   }
 
+  dateToString() {
+    return new Date().toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "numeric",
+    });
+  }
+
+  addParticipant(user: User) {
+    this.roomParticipants.set(user.userId, {
+      ...user,
+      time: this.dateToString(),
+      left: false,
+      timeLeft: null,
+    });
+  }
+
+  updateParticipant(userId: string) {
+    const participant = this.roomParticipants.get(userId);
+    if (participant) {
+      participant.left = true;
+      participant.timeLeft = this.dateToString();
+      this.roomParticipants.set(userId, participant);
+    }
+  }
+
   addUser(socket: Socket, user: User) {
-    this.users.set(socket.id, user);
+    this.users.set(socket.id, { ...user, time: this.dateToString() });
+    this.addParticipant(user);
     socket.join(this.id);
-    socket.broadcast.to(this.id).emit("new-user-joined", user);
+    socket.broadcast
+      .to(this.id)
+      .emit("new-user-joined", { ...user, time: this.dateToString() });
     this.emitUsersInRoom();
     this.emitRoomName();
     this.emitStreams();
@@ -70,6 +108,7 @@ class Room extends Rooms {
     const user = this.users.get(socket.id);
     if (user) {
       const disconnectedUserID = user.userId;
+      this.updateParticipant(disconnectedUserID);
       socket.broadcast.to(this.id).emit("user-disconnected", {
         username: user.username,
         userId: disconnectedUserID,
@@ -95,6 +134,9 @@ class Room extends Rooms {
 
   emitStreams() {
     this.io.sockets.in(this.id).emit("media-streams");
+    this.io.sockets
+      .in(this.id)
+      .emit("participants", [...this.roomParticipants.values()]);
   }
 
   emitUserOperation(socket: Socket, userId: string, op: string) {
