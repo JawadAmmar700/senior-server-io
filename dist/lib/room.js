@@ -35,6 +35,7 @@ class Room extends Rooms {
         return new Date().toLocaleTimeString([], {
             hour: "numeric",
             minute: "numeric",
+            timeZone: "Europe/Istanbul",
         });
     }
     addParticipant(user) {
