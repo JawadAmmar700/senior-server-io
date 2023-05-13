@@ -18,10 +18,9 @@ type Participant = {
   userId: string;
   username: string;
   photoUrl: string;
-  time: string;
-  left?: boolean;
-  timeLeft?: string | null;
   email: string;
+  joinedAt: string;
+  leftAt: string | null;
 };
 
 class Rooms {
@@ -78,17 +77,15 @@ class Room extends Rooms {
   addParticipant(user: User) {
     this.roomParticipants.set(user.userId, {
       ...user,
-      time: this.dateToString(),
-      left: false,
-      timeLeft: null,
+      joinedAt: this.dateToString(),
+      leftAt: null,
     });
   }
 
   updateParticipant(userId: string) {
     const participant = this.roomParticipants.get(userId);
     if (participant) {
-      participant.left = true;
-      participant.timeLeft = this.dateToString();
+      participant.leftAt = this.dateToString();
       this.roomParticipants.set(userId, participant);
     }
   }
