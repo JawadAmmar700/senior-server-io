@@ -39,13 +39,12 @@ class Room extends Rooms {
         });
     }
     addParticipant(user) {
-        this.roomParticipants.set(user.userId, Object.assign(Object.assign({}, user), { time: this.dateToString(), left: false, timeLeft: null }));
+        this.roomParticipants.set(user.userId, Object.assign(Object.assign({}, user), { joinedAt: this.dateToString(), leftAt: null }));
     }
     updateParticipant(userId) {
         const participant = this.roomParticipants.get(userId);
         if (participant) {
-            participant.left = true;
-            participant.timeLeft = this.dateToString();
+            participant.leftAt = this.dateToString();
             this.roomParticipants.set(userId, participant);
         }
     }
