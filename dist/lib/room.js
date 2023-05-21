@@ -28,6 +28,7 @@ class Room extends Rooms {
         this.usersMuted = new Map();
         this.usersScreenShare = new Map();
         this.roomParticipants = new Map();
+        this.isRoomCreator = null;
         this.name = room_name;
         this.id = id;
     }
@@ -48,13 +49,14 @@ class Room extends Rooms {
             this.roomParticipants.set(userId, participant);
         }
     }
-    addUser(socket, user) {
-        this.users.set(socket.id, Object.assign(Object.assign({}, user), { time: this.dateToString() }));
+    addUser(socket, user, isRoomCreator) {
+        this.users.set(socket.id, user);
+        if (isRoomCreator) {
+            this.isRoomCreator = socket.id;
+        }
         this.addParticipant(user);
         socket.join(this.id);
-        socket.broadcast
-            .to(this.id)
-            .emit("new-user-joined", Object.assign(Object.assign({}, user), { time: this.dateToString() }));
+        socket.broadcast.to(this.id).emit("new-user-joined", user);
         this.emitUsersInRoom();
         this.emitRoomName();
         this.emitStreams();
@@ -87,7 +89,7 @@ class Room extends Rooms {
     emitStreams() {
         this.io.sockets.in(this.id).emit("media-streams");
         this.io.sockets
-            .in(this.id)
+            .to(this.isRoomCreator)
             .emit("participants", [...this.roomParticipants.values()]);
     }
     emitUserOperation(socket, userId, op) {

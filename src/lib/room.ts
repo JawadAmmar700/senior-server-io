@@ -10,10 +10,15 @@ type IO = Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>;
 type User = {
   userId: string;
   username: string;
-  photoUrl: string;
   email: string;
-  time: string;
+  photoUrl: string;
+  room_name?: string;
+  isCamera: boolean;
+  isMic: boolean;
+  isScreenShare: boolean;
+  joinedAt: string;
 };
+
 type Participant = {
   userId: string;
   username: string;
@@ -55,6 +60,7 @@ class Room extends Rooms {
   usersMuted = new Map<string, string>();
   usersScreenShare = new Map<string, string>();
   roomParticipants = new Map<string, Participant>();
+  isRoomCreator: string = null;
 
   constructor(
     room_name: string,
@@ -90,13 +96,14 @@ class Room extends Rooms {
     }
   }
 
-  addUser(socket: Socket, user: User) {
-    this.users.set(socket.id, { ...user, time: this.dateToString() });
+  addUser(socket: Socket, user: User, isRoomCreator: boolean) {
+    this.users.set(socket.id, user);
+    if (isRoomCreator) {
+      this.isRoomCreator = socket.id;
+    }
     this.addParticipant(user);
     socket.join(this.id);
-    socket.broadcast
-      .to(this.id)
-      .emit("new-user-joined", { ...user, time: this.dateToString() });
+    socket.broadcast.to(this.id).emit("new-user-joined", user);
     this.emitUsersInRoom();
     this.emitRoomName();
     this.emitStreams();
@@ -133,7 +140,7 @@ class Room extends Rooms {
   emitStreams() {
     this.io.sockets.in(this.id).emit("media-streams");
     this.io.sockets
-      .in(this.id)
+      .to(this.isRoomCreator)
       .emit("participants", [...this.roomParticipants.values()]);
   }
 

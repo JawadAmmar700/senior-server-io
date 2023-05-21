@@ -24,13 +24,25 @@ const io = new Server(server, {
 });
 
 const rooms = new Rooms({ io });
-
 io.on("connection", (socket) => {
   socket.on(
     "join-room",
-    (username, room_name, roomId, userId, photoUrl, email) => {
+    (username, room_name, roomId, userId, photoUrl, email, isRoomCreator) => {
       const room = rooms.createRoom(room_name, roomId);
-      room.addUser(socket, { userId, username, photoUrl, email });
+      room.addUser(
+        socket,
+        {
+          userId,
+          username,
+          photoUrl,
+          email,
+          isCamera: false,
+          isMic: false,
+          isScreenShare: false,
+          joinedAt: room.dateToString(),
+        },
+        isRoomCreator
+      );
       socket.on("user-operation", (userId, op) =>
         room.emitUserOperation(socket, userId, op)
       );
